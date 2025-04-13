@@ -9,6 +9,17 @@ GitOps-driven repo for provisioning Hetzner Cloud using Terraform and configurin
 - **Terraform** - Uses Terraform under the hood to apply changes efficiently.
 - **Terraform State Management** - Stores Terraform state securely in AWS S3.
 
+### Workflow
+
+| Environment     | Event                            | Plan                        | Apply                       | Destroy                      |
+| --------------- | -------------------------------- | --------------------------- | --------------------------- | ---------------------------- |
+| **Production**  | `on.push.branches: main`         |                             | automatic or manual         | never, perpetual environment |
+| **Testing**     | `on.pull_request.branches: main` | Pull Request comment        | automatic or manual         | on pull-request close/merge  |
+| **Development** | manually at localhost            | [Local Usage](#local-usage) | [Local Usage](#local-usage) | [Local Usage](#local-usage)  |
+
+> [!note]
+> Automatic or manual apply depends on the environment protection rules set in the GitHub repository
+
 ## Installation and Configuration
 
 - Configure an AWS S3 bucket to store Terraform state files.
@@ -45,12 +56,42 @@ Set up a Hetzner Cloud project:
 >
 > - Hetzner Cloud API Token
 
+### Set Up GitHub Repository
+
+Set up GitHub actions, variables and secrets:
+
+- GitHub / *Repository* / Settings
+  - Actions / General
+    - Workflow permissions: Read and write permissions
+  - Environments
+    - **New environment**
+      - production
+  - Secrets and variables / Actions / Actions secrets and variables
+    - Secrets
+      - **New repository secret**
+        - `AWS_ACCESS_KEY_ID`
+        - `AWS_SECRET_ACCESS_KEY`
+        - `HCLOUD_TOKEN`
+    - Variables
+      - **New repository variable**
+        - `AWS_ENDPOINT_URL_S3`
+        - `AWS_REGION`
+
+> [!note]
+> Setting up GitHub environments is optional. Workflows can automatically create them with default settings if environments are not configured.
+
 ## Usage
 
-One Hetzner Cloud server named `demo` is provisioned, updated, or decommissioned.
+**Production environment** is created on push events to the main branch. A Terraform plan is generated to a pull request comment, allowing for visibility and review before changes are applied. The apply step is manual, ensuring control over production changes. This environment is long-lived and never destroyed; it's considered a perpetual environment that must be maintained continuously.
+
+**Testing environments** are ephemeral and manually approved, but the workflow is automatically prepared for each pull_request to the main branch. A Terraform plan is generated to a pull request comment. The apply step is manual, allowing skipping ephemeral environment where it's not necessary. Destruction is automated and tied to the lifecycle of the pull request-it is torn down as soon as the PR is closed or merged, ensuring resource cleanup.
+
+**Development environments** are local and manually managed. You can create, plan, apply, and destroy these environments directly from the working directory using CLI, see [Local Usage](#local-usage).
 
 > [!note]
 > All environments share one S3 bucket and one Hetzner Cloud project.
+
+One Hetzner Cloud server named `demo` is provisioned, updated, or decommissioned.
 
 > [!note]
 > The state is stored as JSON object `hetzner-iac-cac/<terraform workspace>/terraform.tfstate` in the bucket.
@@ -67,9 +108,14 @@ export AWS_SECRET_ACCESS_KEY=<aws-secret-access-key>
 
 export HCLOUD_TOKEN=<hcloud-token>
 
-terraform init
-terraform plan
-terraform apply
+export TF_WORKSPACE=development-$(hostname -f) # Creates terraform.tfstate object with workspace prefix in the name
+
+terraform -chdir=terraform init
+terraform -chdir=terraform plan
+terraform -chdir=terraform apply
+
+# When you're done with the environment
+terraform -chdir=terraform destroy
 ```
 
 ## Credits and Acknowledgments
