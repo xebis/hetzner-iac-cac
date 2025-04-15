@@ -9,6 +9,11 @@ GitOps-driven repo for provisioning Hetzner Cloud using Terraform and configurin
 - **Terraform** - Uses Terraform under the hood to apply changes efficiently.
 - **Terraform State Management** - Stores Terraform state securely in AWS S3.
 
+### Environments
+
+- **Production**: Intentionally empty
+- **Testing** and **Development**: One [Hetzner Server](https://docs.hetzner.com/cloud/servers/getting-started/creating-a-server/)
+
 ### Workflow
 
 | Environment     | Event                            | Plan                        | Apply                       | Destroy                      |
