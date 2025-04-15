@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.1](https://github.com/xebis/hetzner-iac-cac/compare/v0.2.0...v0.2.1) (2025-04-15)
+
+### Bug Fixes
+
+* run tf destroy testing environment when pr is closed ([984eccb](https://github.com/xebis/hetzner-iac-cac/commit/984eccb5ee7b5c798f413d8c16352de9b4f22ff1))
+
 ## [0.2.0](https://github.com/xebis/hetzner-iac-cac/compare/v0.1.0...v0.2.0) (2025-04-14)
 
 ### Features
