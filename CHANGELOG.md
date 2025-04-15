@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.2](https://github.com/xebis/hetzner-iac-cac/compare/v0.2.1...v0.2.2) (2025-04-15)
+
+### Bug Fixes
+
+* prefix resource names with workspace name ([f377f48](https://github.com/xebis/hetzner-iac-cac/commit/f377f4864f53e9ef6ddff9ce341a0e42dc138493))
+
 ## [0.2.1](https://github.com/xebis/hetzner-iac-cac/compare/v0.2.0...v0.2.1) (2025-04-15)
 
 ### Bug Fixes
