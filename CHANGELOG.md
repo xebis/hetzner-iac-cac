@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.0](https://github.com/xebis/hetzner-iac-cac/compare/v0.2.2...v0.3.0) (2025-04-16)
+
+### Features
+
+* zero servers at the production environment ([2baec98](https://github.com/xebis/hetzner-iac-cac/commit/2baec98c606e30b81e7df2541fcbcd3fc9bc2356))
+
 ## [0.2.2](https://github.com/xebis/hetzner-iac-cac/compare/v0.2.1...v0.2.2) (2025-04-15)
 
 ### Bug Fixes
