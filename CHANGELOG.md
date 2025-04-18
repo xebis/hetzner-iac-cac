@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.1](https://github.com/xebis/hetzner-iac-cac/compare/v0.4.0...v0.4.1) (2025-04-18)
+
+### Bug Fixes
+
+* do not run terraform apply when environment is destroyed ([f640afc](https://github.com/xebis/hetzner-iac-cac/commit/f640afc0c62ac2a01a09c9d14eba39f722fb0855))
+
 ## [0.4.0](https://github.com/xebis/hetzner-iac-cac/compare/v0.3.0...v0.4.0) (2025-04-18)
 
 ### Features
