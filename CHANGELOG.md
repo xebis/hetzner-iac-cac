@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.2](https://github.com/xebis/hetzner-iac-cac/compare/v0.4.1...v0.4.2) (2025-04-18)
+
+### Bug Fixes
+
+* do not comment pr with testing tf plan when pr is closed ([e45c5b7](https://github.com/xebis/hetzner-iac-cac/commit/e45c5b7fed75acaa0c28544c5881c0c80d811305))
+
 ## [0.4.1](https://github.com/xebis/hetzner-iac-cac/compare/v0.4.0...v0.4.1) (2025-04-18)
 
 ### Bug Fixes
