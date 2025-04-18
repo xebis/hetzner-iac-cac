@@ -113,14 +113,23 @@ export AWS_SECRET_ACCESS_KEY=<aws-secret-access-key>
 
 export HCLOUD_TOKEN=<hcloud-token>
 
-export TF_WORKSPACE=development-$(hostname -f) # Creates terraform.tfstate object with workspace prefix in the name
+export ENVIRONMENT=development-$(hostname -f) # Creates terraform.tfstate object with workspace prefix in the name
 
+# Create the environment
 terraform -chdir=terraform init
+terraform -chdir=terraform workspace select -or-create "${ENVIRONMENT}"
+
+# Set up resources
 terraform -chdir=terraform plan
 terraform -chdir=terraform apply
 
-# When you're done with the environment
+# Tear down resources
 terraform -chdir=terraform destroy
+
+# Delete the environment
+terraform -chdir=terraform workspace select "default"
+terraform -chdir=terraform workspace delete "${ENVIRONMENT}"
+
 ```
 
 ## Credits and Acknowledgments
