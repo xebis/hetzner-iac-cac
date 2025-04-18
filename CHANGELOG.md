@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.0](https://github.com/xebis/hetzner-iac-cac/compare/v0.3.0...v0.4.0) (2025-04-18)
+
+### Features
+
+* environments creation and ephemeral environments delete ([2d8c2c5](https://github.com/xebis/hetzner-iac-cac/commit/2d8c2c529af363b2ba4a6cd91142d59540f6c0c3))
+
 ## [0.3.0](https://github.com/xebis/hetzner-iac-cac/compare/v0.2.2...v0.3.0) (2025-04-16)
 
 ### Features
