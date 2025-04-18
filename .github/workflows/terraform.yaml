@@ -104,6 +104,7 @@ jobs:
         run: exit 1
 
       - name: Terraform apply
+        if: github.event_name != 'pull_request' || github.event.action != 'closed'
         run: terraform -chdir=terraform apply -auto-approve -input=false
 
       - name: Terraform destroy
