@@ -5,7 +5,7 @@ GitOps-driven repo for provisioning Hetzner Cloud using Terraform and configurin
 ## Features
 
 - **Hetzner Cloud IaC** - Automate the provisioning and configuration of Hetzner Cloud infrastructure using Terraform.
-- **GitOps Workflow** - Manage configurations via pull requests and automate updates using GitHub Actions.
+- **GitOps Workflow** - Manage configurations via pull requests and automate updates using GitHub Actions and GitHub Environments.
 - **Terraform** - Uses Terraform under the hood to apply changes efficiently.
 - **Terraform State Management** - Stores Terraform state securely in AWS S3.
 

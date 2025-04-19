@@ -1,4 +1,6 @@
 ---
+name: Infrastructure Lifecycle
+
 on:
   push:
     branches:
@@ -17,22 +19,20 @@ env:
   ENVIRONMENT: ${{ github.event_name == 'push' && 'production' || github.event_name == 'pull_request' && 'testing' || 'development' }}
 
 jobs:
-  terraform:
-    name: "Terraform"
+  provision:
+    name: "Provision Infrastructure"
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
     environment:
       name: ${{ github.event_name == 'push' && 'production' || github.event_name == 'pull_request' && 'testing' || 'development' }}
 
     steps:
-      - name: Checkout caller YAML configuration
+      - name: Checkout Terraform configuration
         uses: actions/checkout@v4
         with:
           sparse-checkout: terraform
 
-      - name: Setup Terraform with specified version
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.11.0
@@ -51,7 +51,7 @@ jobs:
       
       - name: Terraform plan as the PR comment
         uses: actions/github-script@v7
-        if: github.event_name == 'pull_request' && github.event.action != 'closed'
+        if: github.event_name == 'pull_request'
         env:
           PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
         with:
@@ -104,16 +104,38 @@ jobs:
         run: exit 1
 
       - name: Terraform apply
-        if: github.event_name != 'pull_request' || github.event.action != 'closed'
         run: terraform -chdir=terraform apply -auto-approve -input=false
 
+  destroy:
+    name: "Destroy Infrastructure"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    environment:
+      name: ${{ github.event_name == 'push' && 'production' || github.event_name == 'pull_request' && 'testing' || 'development' }}
+
+    steps:
+      - name: Checkout Terraform configuration
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: terraform
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.11.0
+      
+      - name: Terraform init
+        id: init
+        run: terraform -chdir=terraform init
+      
+      - name: Terraform select or create workspace
+        run: terraform -chdir=terraform workspace select "${ENVIRONMENT}"
+  
       - name: Terraform destroy
-        if: github.event_name == 'pull_request' && github.event.action == 'closed'
         run: terraform -chdir=terraform destroy -auto-approve -input=false
       
       - name: Terraform select default workspace
         run: terraform -chdir=terraform workspace select "default"
 
       - name: Terraform delete workspace
-        if: github.event_name == 'pull_request' && github.event.action == 'closed'
         run: terraform -chdir=terraform workspace delete "${ENVIRONMENT}"
