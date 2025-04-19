@@ -31,7 +31,7 @@ GitOps-driven repo for provisioning Hetzner Cloud using Terraform and configurin
 - Set up a Hetzner Cloud project and an API token with read-write permission.
 
 > [!caution]
-> The Hetzner Cloud project API token, S3 API credentials, Terraform state, GitHub repository secrets, and configuration code are key security elements.
+> The Hetzner Cloud project API token, S3 API credentials, Terraform state, SSH private key, GitHub repository secrets, and configuration code are key security elements.
 
 ### Set Up AWS S3 Bucket
 
@@ -61,6 +61,19 @@ Set up a Hetzner Cloud project:
 >
 > - Hetzner Cloud API Token
 
+### Generate SSH Key Pair
+
+Prepare a dedicated SSH key pair for each environment.
+
+```shell
+ssh-keygen -t rsa -b 2048 -N "" -f id_rsa -q
+```
+
+> [!important]
+> Ensure you have the following ready:
+>
+> - A unique `id_rsa` and `id_rsa.pub` key pair for each environment.
+
 ### Set Up GitHub Repository
 
 Set up GitHub actions, variables and secrets:
@@ -70,7 +83,20 @@ Set up GitHub actions, variables and secrets:
     - Workflow permissions: Read and write permissions
   - Environments
     - **New environment**
-      - production
+      - `production`
+        - **Add environment secret**
+          - Name: id_rsa
+          - Value: *id_rsa file contents*
+        - **Add environment variable**
+          - Name: id_rsa.pub
+          - Value: *id_rsa.pub file contents*
+      - `testing`
+        - **Add environment secret**
+          - Name: id_rsa
+          - Value: *id_rsa file contents*
+        - **Add environment variable**
+          - Name: id_rsa.pub
+          - Value: *id_rsa.pub file contents*
   - Secrets and variables / Actions / Actions secrets and variables
     - Secrets
       - **New repository secret**
@@ -83,7 +109,7 @@ Set up GitHub actions, variables and secrets:
         - `AWS_REGION`
 
 > [!note]
-> Setting up GitHub environments is optional. Workflows can automatically create them with default settings if environments are not configured.
+> Setting up GitHub environments is required. Although workflows can automatically create them with default settings if environments are not configured, SSH key pairs must be present for infrastructure lifecycle.
 
 ## Usage
 
