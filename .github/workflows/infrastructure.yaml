@@ -44,6 +44,15 @@ jobs:
       - name: Terraform select or create workspace
         run: terraform -chdir=terraform workspace select -or-create "${ENVIRONMENT}"
 
+      - name: Inject SSH public key
+        run: |
+          cat <<EOF > id_rsa.pub
+          "${{ vars.ID_RSA_PUB }}"
+          EOF
+
+      - name: Inject SSH public key
+        run: sed -i "s|id_rsa\.pub|$(< id_rsa.pub)|" terraform/cloud-config.yaml
+
       - name: Terraform plan
         id: plan
         run: terraform -chdir=terraform plan -no-color -input=false
@@ -105,6 +114,40 @@ jobs:
 
       - name: Terraform apply
         run: terraform -chdir=terraform apply -auto-approve -input=false
+
+  test:
+    name: "Test Infrastructure"
+    runs-on: ubuntu-latest
+    needs: provision
+    environment:
+      name: ${{ github.event_name == 'push' && 'production' || github.event_name == 'pull_request' && 'testing' || 'development' }}
+    steps:
+      - name: Checkout Terraform configuration
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: terraform
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.11.0
+      
+      - name: Terraform init
+        id: init
+        run: terraform -chdir=terraform init
+      
+      - name: Terraform select or create workspace
+        run: terraform -chdir=terraform workspace select "${ENVIRONMENT}"
+
+      - name: Add SSH private key
+        run: |
+          cat <<EOF > id_rsa
+          "${{ secrets.ID_RSA }}"
+          EOF
+          chmod 600 id_rsa
+
+      - name: Test SSH connection
+        run: ssh -i id_rsa -o StrictHostKeyChecking=no github@$(terraform -chdir=terraform output -raw ipv4_address) echo 'Hello world from $(hostname)'
 
   destroy:
     name: "Destroy Infrastructure"
