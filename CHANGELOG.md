@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.0](https://github.com/xebis/hetzner-iac-cac/compare/v0.4.2...v0.5.0) (2025-04-19)
+
+### Features
+
+* split infrastructure terraform job to provision and destroy ([776a7f2](https://github.com/xebis/hetzner-iac-cac/commit/776a7f2c733f06ef8a65e3047f03a166ddbc5b30))
+
 ## [0.4.2](https://github.com/xebis/hetzner-iac-cac/compare/v0.4.1...v0.4.2) (2025-04-18)
 
 ### Bug Fixes
