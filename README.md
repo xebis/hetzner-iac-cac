@@ -119,9 +119,16 @@ export ENVIRONMENT=development-$(hostname -f) # Creates terraform.tfstate object
 terraform -chdir=terraform init
 terraform -chdir=terraform workspace select -or-create "${ENVIRONMENT}"
 
+# Add your SSH key
+sed -i "s|id_rsa\.pub|$(< ~/.ssh/id_rsa.pub)|" terraform/cloud-config.yaml
+
 # Set up resources
 terraform -chdir=terraform plan
 terraform -chdir=terraform apply
+
+# Test the environment
+ssh -o StrictHostKeyChecking=no github@$(terraform -chdir=terraform output -raw ipv4_address)
+exit
 
 # Tear down resources
 terraform -chdir=terraform destroy
@@ -130,6 +137,8 @@ terraform -chdir=terraform destroy
 terraform -chdir=terraform workspace select "default"
 terraform -chdir=terraform workspace delete "${ENVIRONMENT}"
 
+# Clean up
+sed -i "s|$(< ~/.ssh/id_rsa.pub)|id_rsa\.pub|" terraform/cloud-config.yaml
 ```
 
 ## Credits and Acknowledgments

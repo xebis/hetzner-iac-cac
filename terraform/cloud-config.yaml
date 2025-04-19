@@ -1,0 +1,12 @@
+#cloud-config
+---
+users:
+  - default
+  - name: github
+    gecos: GitHub
+    primary_group: users
+    groups: users, admin
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - id_rsa.pub
