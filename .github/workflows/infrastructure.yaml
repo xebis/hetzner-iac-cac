@@ -44,10 +44,10 @@ jobs:
       - name: Terraform select or create workspace
         run: terraform -chdir=terraform workspace select -or-create "${ENVIRONMENT}"
 
-      - name: Inject SSH public key
+      - name: Get SSH public key
         run: |
           cat <<EOF > id_rsa.pub
-          "${{ vars.ID_RSA_PUB }}"
+          ${{ vars.ID_RSA_PUB }}
           EOF
 
       - name: Inject SSH public key
@@ -139,10 +139,10 @@ jobs:
       - name: Terraform select or create workspace
         run: terraform -chdir=terraform workspace select "${ENVIRONMENT}"
 
-      - name: Add SSH private key
+      - name: Get SSH private key
         run: |
           cat <<EOF > id_rsa
-          "${{ secrets.ID_RSA }}"
+          ${{ secrets.ID_RSA }}
           EOF
           chmod 600 id_rsa
 
