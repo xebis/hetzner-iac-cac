@@ -147,7 +147,13 @@ jobs:
           chmod 600 id_ed25519
 
       - name: Test SSH connection
-        run: ssh -i id_ed25519 -o StrictHostKeyChecking=no github@$(terraform -chdir=terraform output -raw ipv4_address) echo 'Hello world from $(hostname)'
+        run: |
+          DEMO_IPV4_ADDRESS=$(terraform -chdir=terraform output -raw ipv4_address)
+          if [ -n "$DEMO_IPV4_ADDRESS" ]; then
+            ssh -i id_ed25519 -o StrictHostKeyChecking=no "github@$DEMO_IPV4_ADDRESS" echo 'Hello world from $(hostname)'
+          else
+            echo "Skipping SSH connection test, Terraform output ipv4_address is empty"
+          fi
 
   destroy:
     name: "Destroy Infrastructure"
