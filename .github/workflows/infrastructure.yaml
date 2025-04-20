@@ -150,8 +150,24 @@ jobs:
         run: |
           DEMO_IPV4_ADDRESS=$(terraform -chdir=terraform output -raw ipv4_address)
           if [ -n "$DEMO_IPV4_ADDRESS" ]; then
-            ssh -i id_ed25519 -o StrictHostKeyChecking=no "github@$DEMO_IPV4_ADDRESS" echo 'Hello world from $(hostname)'
-          else
+            # It takes some time until SSH server is ready (Hetzner server preparation, VM boot up, Cloud-init setup), usually around a minute with plenty of buffer at the top
+            attempt=0
+            max_attempts=30
+            while [ $attempt -lt $max_attempts ]; do
+              if ssh -i id_ed25519 -o StrictHostKeyChecking=no "github@$DEMO_IPV4_ADDRESS" echo 'Hello world from $(hostname)'; then
+                echo "SSH connection attempt #$attempt successful"
+                break
+              else
+                echo "SSH connection attempt #$attempt failed, retrying in 10 seconds..."
+                attempt=$((attempt + 1))
+                sleep 10
+              fi
+            done
+
+            if [ $attempt -eq $max_attempts ]; then
+              echo "SSH connection failed after $max_attempts attempts"
+              exit 1
+            fi    else
             echo "Skipping SSH connection test, Terraform output ipv4_address is empty"
           fi
 
