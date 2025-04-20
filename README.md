@@ -86,17 +86,17 @@ Set up GitHub actions, variables and secrets:
       - `production`
         - **Add environment secret**
           - Name: id_rsa
-          - Value: *id_rsa file contents*
+          - Value: *id_rsa file contents including trailing newline*
         - **Add environment variable**
           - Name: id_rsa.pub
-          - Value: *id_rsa.pub file contents*
+          - Value: *id_rsa.pub file contents without trailing newline*
       - `testing`
         - **Add environment secret**
           - Name: id_rsa
-          - Value: *id_rsa file contents*
+          - Value: *id_rsa file contents including trailing newline*
         - **Add environment variable**
           - Name: id_rsa.pub
-          - Value: *id_rsa.pub file contents*
+          - Value: *id_rsa.pub file contents without trailing newline*
   - Secrets and variables / Actions / Actions secrets and variables
     - Secrets
       - **New repository secret**
