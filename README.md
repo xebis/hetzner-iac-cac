@@ -66,13 +66,13 @@ Set up a Hetzner Cloud project:
 Prepare a dedicated SSH key pair for each environment.
 
 ```shell
-ssh-keygen -t rsa -b 2048 -N "" -f id_rsa -q
+ssh-keygen -t ed25519 -b 2048 -N "" -f id_ed25519 -q
 ```
 
 > [!important]
 > Ensure you have the following ready:
 >
-> - A unique `id_rsa` and `id_rsa.pub` key pair for each environment.
+> - A unique `id_ed25519` and `id_ed25519.pub` key pair for each environment.
 
 ### Set Up GitHub Repository
 
@@ -85,18 +85,18 @@ Set up GitHub actions, variables and secrets:
     - **New environment**
       - `production`
         - **Add environment secret**
-          - Name: id_rsa
-          - Value: *id_rsa file contents including trailing newline*
+          - Name: ID_ED25519
+          - Value: *id_ed25519 file contents including trailing newline*
         - **Add environment variable**
-          - Name: id_rsa.pub
-          - Value: *id_rsa.pub file contents without trailing newline*
+          - Name: ID_ED25519_PUB
+          - Value: *id_ed25519.pub file contents without trailing newline*
       - `testing`
         - **Add environment secret**
-          - Name: id_rsa
-          - Value: *id_rsa file contents including trailing newline*
+          - Name: ID_ED25519
+          - Value: *id_ed25519 file contents including trailing newline*
         - **Add environment variable**
-          - Name: id_rsa.pub
-          - Value: *id_rsa.pub file contents without trailing newline*
+          - Name: ID_ED25519_PUB
+          - Value: *id_ed25519.pub file contents without trailing newline*
   - Secrets and variables / Actions / Actions secrets and variables
     - Secrets
       - **New repository secret**
@@ -146,7 +146,7 @@ terraform -chdir=terraform init
 terraform -chdir=terraform workspace select -or-create "${ENVIRONMENT}"
 
 # Add your SSH key
-sed -i "s|id_rsa\.pub|$(< ~/.ssh/id_rsa.pub)|" terraform/cloud-config.yaml
+sed -i "s|pubkey|$(< ~/.ssh/id_rsa.pub)|" terraform/cloud-config.yaml
 
 # Set up resources
 terraform -chdir=terraform plan
@@ -164,7 +164,7 @@ terraform -chdir=terraform workspace select "default"
 terraform -chdir=terraform workspace delete "${ENVIRONMENT}"
 
 # Clean up
-sed -i "s|$(< ~/.ssh/id_rsa.pub)|id_rsa\.pub|" terraform/cloud-config.yaml
+sed -i "s|$(< ~/.ssh/id_rsa.pub)|pubkey|" terraform/cloud-config.yaml
 ```
 
 ## Credits and Acknowledgments

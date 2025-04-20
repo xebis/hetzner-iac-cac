@@ -46,12 +46,12 @@ jobs:
 
       - name: Get SSH public key
         run: |
-          cat <<EOF > id_rsa.pub
-          ${{ vars.ID_RSA_PUB }}
+          cat <<EOF > id_ed25519.pub
+          ${{ vars.ID_ED25519_PUB }}
           EOF
 
       - name: Inject SSH public key
-        run: sed -i "s|id_rsa\.pub|$(< id_rsa.pub)|" terraform/cloud-config.yaml
+        run: sed -i "s|pubkey|$(< id_ed25519.pub)|" terraform/cloud-config.yaml
 
       - name: Terraform plan
         id: plan
@@ -141,13 +141,13 @@ jobs:
 
       - name: Get SSH private key
         run: |
-          cat <<EOF > id_rsa
-          ${{ secrets.ID_RSA }}
+          cat <<EOF > id_ed25519
+          ${{ secrets.ID_ED25519 }}
           EOF
-          chmod 600 id_rsa
+          chmod 600 id_ed25519
 
       - name: Test SSH connection
-        run: ssh -i id_rsa -o StrictHostKeyChecking=no github@$(terraform -chdir=terraform output -raw ipv4_address) echo 'Hello world from $(hostname)'
+        run: ssh -i id_ed25519 -o StrictHostKeyChecking=no github@$(terraform -chdir=terraform output -raw ipv4_address) echo 'Hello world from $(hostname)'
 
   destroy:
     name: "Destroy Infrastructure"
