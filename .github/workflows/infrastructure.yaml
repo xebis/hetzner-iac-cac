@@ -147,6 +147,7 @@ jobs:
           chmod 600 id_ed25519
 
       - name: Test SSH connection
+        id: test
         run: |
           DEMO_IPV4_ADDRESS=$(terraform -chdir=terraform output -raw ipv4_address)
           if [ -n "$DEMO_IPV4_ADDRESS" ]; then
@@ -170,6 +171,15 @@ jobs:
             fi    else
             echo "Skipping SSH connection test, Terraform output ipv4_address is empty"
           fi
+        continue-on-error: true
+
+      - name: Get SSH private key
+        run: |
+          rm id_ed25519
+
+      - name: Terraform plan status
+        if: steps.test.outcome == 'failure'
+        run: exit 1
 
   destroy:
     name: "Destroy Infrastructure"
