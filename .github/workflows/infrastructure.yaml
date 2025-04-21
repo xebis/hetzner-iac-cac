@@ -46,12 +46,12 @@ jobs:
 
       - name: Get SSH public key
         run: |
-          cat <<EOF > id_ed25519.pub
-          ${{ vars.ID_ED25519_PUB }}
+          cat <<EOF > id_ssh.pub
+          ${{ vars.ID_SSH_PUB }}
           EOF
 
       - name: Inject SSH public key
-        run: sed -i "s|pubkey|$(< id_ed25519.pub)|" terraform/cloud-config.yaml
+        run: sed -i "s|pubkey|$(< id_ssh.pub)|" terraform/cloud-config.yaml
 
       - name: Terraform plan
         id: plan
@@ -141,10 +141,10 @@ jobs:
 
       - name: Get SSH private key
         run: |
-          cat <<EOF > id_ed25519
-          ${{ secrets.ID_ED25519 }}
+          cat <<EOF > id_ssh
+          ${{ secrets.ID_SSH }}
           EOF
-          chmod 600 id_ed25519
+          chmod 600 id_ssh
 
       - name: Test SSH connection
         id: test
@@ -155,7 +155,7 @@ jobs:
             attempt=0
             max_attempts=30
             while [ $attempt -lt $max_attempts ]; do
-              if ssh -i id_ed25519 -o StrictHostKeyChecking=no "github@$DEMO_IPV4_ADDRESS" echo 'Hello world from $(hostname)'; then
+              if ssh -i id_ssh -o StrictHostKeyChecking=no "github@$DEMO_IPV4_ADDRESS" echo 'Hello world from $(hostname)'; then
                 echo "SSH connection attempt #$attempt successful"
                 break
               else
@@ -175,7 +175,7 @@ jobs:
 
       - name: Get SSH private key
         run: |
-          rm id_ed25519
+          rm id_ssh
 
       - name: Terraform plan status
         if: steps.test.outcome == 'failure'

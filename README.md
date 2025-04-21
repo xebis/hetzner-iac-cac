@@ -85,17 +85,17 @@ Set up GitHub actions, variables and secrets:
     - **New environment**
       - `production`
         - **Add environment secret**
-          - Name: ID_ED25519
+          - Name: SSH_ID
           - Value: *id_ed25519 file contents including trailing newline*
         - **Add environment variable**
-          - Name: ID_ED25519_PUB
+          - Name: SSH_ID_PUB
           - Value: *id_ed25519.pub file contents without trailing newline*
       - `testing`
         - **Add environment secret**
-          - Name: ID_ED25519
+          - Name: SSH_ID
           - Value: *id_ed25519 file contents including trailing newline*
         - **Add environment variable**
-          - Name: ID_ED25519_PUB
+          - Name: SSH_ID_PUB
           - Value: *id_ed25519.pub file contents without trailing newline*
   - Secrets and variables / Actions / Actions secrets and variables
     - Secrets
