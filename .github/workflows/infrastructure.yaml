@@ -17,6 +17,7 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
   ENVIRONMENT: ${{ github.event_name == 'push' && 'production' || github.event_name == 'pull_request' && 'testing' || 'development' }}
+  TF_VAR_ssh_id_pub: ${{ vars.SSH_ID_PUB }}
 
 jobs:
   provision:
@@ -43,15 +44,6 @@ jobs:
       
       - name: Terraform select or create workspace
         run: terraform -chdir=terraform workspace select -or-create "${ENVIRONMENT}"
-
-      - name: Get SSH public key
-        run: |
-          cat <<EOF > id_ssh.pub
-          ${{ vars.ID_SSH_PUB }}
-          EOF
-
-      - name: Inject SSH public key
-        run: sed -i "s|pubkey|$(< id_ssh.pub)|" terraform/cloud-config.yaml
 
       - name: Terraform plan
         id: plan
@@ -141,10 +133,10 @@ jobs:
 
       - name: Get SSH private key
         run: |
-          cat <<EOF > id_ssh
-          ${{ secrets.ID_SSH }}
+          cat <<EOF > ssh_id
+          ${{ secrets.SSH_ID }}
           EOF
-          chmod 600 id_ssh
+          chmod 600 ssh_id
 
       - name: Test SSH connection
         id: test
@@ -155,7 +147,7 @@ jobs:
             attempt=0
             max_attempts=30
             while [ $attempt -lt $max_attempts ]; do
-              if ssh -i id_ssh -o StrictHostKeyChecking=no "github@$DEMO_IPV4_ADDRESS" echo 'Hello world from $(hostname)'; then
+              if ssh -i ssh_id -o StrictHostKeyChecking=no "github@$DEMO_IPV4_ADDRESS" echo 'Hello world from $(hostname)'; then
                 echo "SSH connection attempt #$attempt successful"
                 break
               else
@@ -175,7 +167,7 @@ jobs:
 
       - name: Get SSH private key
         run: |
-          rm id_ssh
+          rm ssh_id
 
       - name: Terraform plan status
         if: steps.test.outcome == 'failure'
