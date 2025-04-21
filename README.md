@@ -146,7 +146,7 @@ terraform -chdir=terraform init
 terraform -chdir=terraform workspace select -or-create "${ENVIRONMENT}"
 
 # Add your SSH key
-sed -i "s|pubkey|$(< ~/.ssh/id_rsa.pub)|" terraform/cloud-config.yaml
+export TF_VAR_ssh_id_pub=$(cat ~/.ssh/id_rsa.pub)
 
 # Set up resources
 terraform -chdir=terraform plan
@@ -162,9 +162,6 @@ terraform -chdir=terraform destroy
 # Delete the environment
 terraform -chdir=terraform workspace select "default"
 terraform -chdir=terraform workspace delete "${ENVIRONMENT}"
-
-# Clean up
-sed -i "s|$(< ~/.ssh/id_rsa.pub)|pubkey|" terraform/cloud-config.yaml
 ```
 
 ## Credits and Acknowledgments
