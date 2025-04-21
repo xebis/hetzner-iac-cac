@@ -1,3 +1,4 @@
 ---
 collections:
+  - hetzner.hcloud
   - name: git+https://github.com/xebis/ansible-collection.git,main

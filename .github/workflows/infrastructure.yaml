@@ -173,6 +173,68 @@ jobs:
         if: steps.test.outcome == 'failure'
         run: exit 1
 
+  config:
+    name: "Configure Infrastructure"
+    runs-on: ubuntu-latest
+    needs: test
+    environment:
+      name: ${{ github.event_name == 'push' && 'production' || github.event_name == 'pull_request' && 'testing' || 'development' }}
+    steps:
+      - name: Checkout Terraform configuration
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            ansible
+            terraform
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.11.0
+      
+      - name: Terraform init
+        id: init
+        run: terraform -chdir=terraform init
+      
+      - name: Terraform select or create workspace
+        run: terraform -chdir=terraform workspace select "${ENVIRONMENT}"
+      
+      - name: Install Ansible dependencies
+        run: |
+          pipx inject ansible-core requests python-dateutil
+
+      - name: Install Ansible configuration dependencies
+        run: ansible-galaxy collection install -r ansible/requirements.yaml
+
+      - name: Get SSH private key
+        run: |
+          cat <<EOF > ssh_id
+          ${{ secrets.SSH_ID }}
+          EOF
+          chmod 600 ssh_id
+
+      - name: Add SSH fingerprint and private key
+        run: |
+          mkdir ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan $(terraform -chdir=terraform output -raw ipv4_address) >> ~/.ssh/known_hosts
+          mv ssh_id ~/.ssh/id_ed25519
+
+      - name: Run Ansible playbook
+        id: ansible-playbook
+        run: |
+          sed -i "s/workspace/$(terraform -chdir=terraform workspace show)/" ansible/hcloud.yaml
+          ansible-playbook -u github -i ansible/hcloud.yaml ansible/test.yaml
+        continue-on-error: true
+
+      - name: Remove SSH directory
+        run: |
+          rm -rf ~/.ssh
+
+      - name: Ansible playbook status
+        if: steps.ansible-playbook.outcome == 'failure'
+        run: exit 1
+
   destroy:
     name: "Destroy Infrastructure"
     runs-on: ubuntu-latest
