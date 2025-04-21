@@ -8,6 +8,7 @@ GitOps-driven repo for provisioning Hetzner Cloud using Terraform and configurin
 - **GitOps Workflow** - Manage configurations via pull requests and automate updates using GitHub Actions and GitHub Environments.
 - **Terraform** - Uses Terraform under the hood to apply changes efficiently.
 - **Terraform State Management** - Stores Terraform state securely in AWS S3.
+- **Ansible** - Uses Ansible for configuration and management of Hetzner servers.
 
 ### Environments
 
@@ -122,7 +123,7 @@ Set up GitHub actions, variables and secrets:
 > [!note]
 > All environments share one S3 bucket and one Hetzner Cloud project.
 
-One Hetzner Cloud server named `demo` is provisioned, updated, or decommissioned.
+One Hetzner Cloud server named `[environment]-demo` is provisioned, updated, or decommissioned.
 
 > [!note]
 > The state is stored as JSON object `hetzner-iac-cac/<terraform workspace>/terraform.tfstate` in the bucket.
@@ -156,8 +157,22 @@ terraform -chdir=terraform apply
 ssh -o StrictHostKeyChecking=no github@$(terraform -chdir=terraform output -raw ipv4_address)
 exit
 
+# Set up servers
+sed -i "s/workspace/$(terraform -chdir=terraform workspace show)/" ansible/hcloud.yaml
+ansible-inventory -i ansible/hcloud.yaml --list # or --graph
+
+ssh-keygen -f ~/.ssh/known_hosts -R $(terraform -chdir=terraform output -raw ipv4_address)
+ssh-keyscan $(terraform -chdir=terraform output -raw ipv4_address) >> ~/.ssh/known_hosts
+ansible -u github -i ansible/hcloud.yaml all -m ansible.builtin.ping # or ansible.builtin.setup
+
+ansible-galaxy collection install -r ansible/requirements.yaml # if not yet installed
+ansible-playbook -u github -i ansible/hcloud.yaml ansible/test.yaml
+
 # Tear down resources
 terraform -chdir=terraform destroy
+
+# Clean up
+sed -i "s/$(terraform -chdir=terraform workspace show)/workspace/" ansible/hcloud.yaml
 
 # Delete the environment
 terraform -chdir=terraform workspace select "default"
