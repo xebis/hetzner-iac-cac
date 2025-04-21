@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.0](https://github.com/xebis/hetzner-iac-cac/compare/v0.5.0...v0.6.0) (2025-04-21)
+
+### Features
+
+* add infrastructure workflow test ssh connection job ([1c5bac4](https://github.com/xebis/hetzner-iac-cac/commit/1c5bac4c30e5cd26f77ad1feda47e95e61dce08e))
+* add server cloud-config and local ssh connection test ([dd6839c](https://github.com/xebis/hetzner-iac-cac/commit/dd6839c368630bd7bedf363e9112dde6b9079319))
+* replace ssh algorithm rsa with ed25519 ([89c60b3](https://github.com/xebis/hetzner-iac-cac/commit/89c60b3f41db9f00664350bbc913bbf36b090a17))
+* replace ssh public key injection by terraform input ([1e23ceb](https://github.com/xebis/hetzner-iac-cac/commit/1e23cebe770e0971ae661a8a9a1fce03821ac85d))
+
+### Bug Fixes
+
+* infrastructure workflow should run on pull request synchronize ([4490a7a](https://github.com/xebis/hetzner-iac-cac/commit/4490a7adb0728f48bff4f3f1a64e66510b980735))
+* ssh connection test shouldn't be run on zero servers ([657f7af](https://github.com/xebis/hetzner-iac-cac/commit/657f7af7fe7e6c2d369bd22481806d91e25897af))
+* ssh key pair must not contain extra characters ([8dd97a9](https://github.com/xebis/hetzner-iac-cac/commit/8dd97a9e463820380c6bd69b8a56c6e614917d8d))
+* test should wait until ssh server is ready ([438200b](https://github.com/xebis/hetzner-iac-cac/commit/438200b40c54466bb5b035a0b36ecc2eccfda672))
+
 ## [0.5.0](https://github.com/xebis/hetzner-iac-cac/compare/v0.4.2...v0.5.0) (2025-04-19)
 
 ### Features
