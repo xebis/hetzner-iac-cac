@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/xebis/hetzner-iac-cac/compare/v0.6.0...v0.7.0) (2025-04-22)
+
+### Features
+
+* add ansible inventory and test playbook ([d57a505](https://github.com/xebis/hetzner-iac-cac/commit/d57a505b62adafcb8505da08ab0ffdde07992375))
+* add infrastructure workflow config job running ansible playbook ([2472914](https://github.com/xebis/hetzner-iac-cac/commit/2472914954ee3935b658c5d4fb085d0b8dfc814f))
+
 ## [0.6.0](https://github.com/xebis/hetzner-iac-cac/compare/v0.5.0...v0.6.0) (2025-04-21)
 
 ### Features
