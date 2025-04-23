@@ -128,7 +128,7 @@ jobs:
         id: init
         run: terraform -chdir=terraform init
       
-      - name: Terraform select or create workspace
+      - name: Terraform select workspace
         run: terraform -chdir=terraform workspace select "${ENVIRONMENT}"
 
       - name: Get SSH private key
@@ -160,12 +160,13 @@ jobs:
             if [ $attempt -eq $max_attempts ]; then
               echo "SSH connection failed after $max_attempts attempts"
               exit 1
-            fi    else
+            fi
+          else
             echo "Skipping SSH connection test, Terraform output ipv4_address is empty"
           fi
         continue-on-error: true
 
-      - name: Get SSH private key
+      - name: Remove SSH private key
         run: |
           rm ssh_id
 
@@ -196,7 +197,7 @@ jobs:
         id: init
         run: terraform -chdir=terraform init
       
-      - name: Terraform select or create workspace
+      - name: Terraform select workspace
         run: terraform -chdir=terraform workspace select "${ENVIRONMENT}"
       
       - name: Install Ansible dependencies
@@ -257,7 +258,7 @@ jobs:
         id: init
         run: terraform -chdir=terraform init
       
-      - name: Terraform select or create workspace
+      - name: Terraform select workspace
         run: terraform -chdir=terraform workspace select "${ENVIRONMENT}"
   
       - name: Terraform destroy
