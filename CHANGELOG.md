@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.1](https://github.com/xebis/hetzner-iac-cac/compare/v0.7.0...v0.7.1) (2025-04-23)
+
+### Bug Fixes
+
+* terraform ipv4 address output should be empty instead of null ([340cea0](https://github.com/xebis/hetzner-iac-cac/commit/340cea0c880e94aada7326bf7c6ad128f4346521))
+
 ## [0.7.0](https://github.com/xebis/hetzner-iac-cac/compare/v0.6.0...v0.7.0) (2025-04-22)
 
 ### Features
