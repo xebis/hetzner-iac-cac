@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.0](https://github.com/xebis/hetzner-iac-cac/compare/v0.7.1...v0.8.0) (2025-05-03)
+
+### Features
+
+* **workflow:** optimize terraform steps at wait and config ([aef98fa](https://github.com/xebis/hetzner-iac-cac/commit/aef98fa5e80a7d6e4d75b561ab63032ca769ecb9))
+
 ## [0.7.1](https://github.com/xebis/hetzner-iac-cac/compare/v0.7.0...v0.7.1) (2025-04-23)
 
 ### Bug Fixes
