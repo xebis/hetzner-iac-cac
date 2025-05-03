@@ -24,6 +24,8 @@ jobs:
     name: "Provision Infrastructure"
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.action != 'closed'
+    outputs:
+      demo_ipv4_address: ${{ steps.get_terraform_outputs.outputs.demo_ipv4_address }}
     environment:
       name: ${{ github.event_name == 'push' && 'production' || github.event_name == 'pull_request' && 'testing' || 'development' }}
 
@@ -107,30 +109,19 @@ jobs:
       - name: Terraform apply
         run: terraform -chdir=terraform apply -auto-approve -input=false
 
-  test:
-    name: "Test Infrastructure"
+      - name: Get the demo server IPv4 address
+        id: get_terraform_outputs
+        run: |
+          echo "demo_ipv4_address=$(terraform -chdir=terraform output -raw ipv4_address)" >> "$GITHUB_OUTPUT"
+
+  wait:
+    name: "Wait for Infrastructure"
     runs-on: ubuntu-latest
     needs: provision
+    if: needs.provision.outputs.demo_ipv4_address != ''
     environment:
       name: ${{ github.event_name == 'push' && 'production' || github.event_name == 'pull_request' && 'testing' || 'development' }}
     steps:
-      - name: Checkout Terraform configuration
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: terraform
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.11.0
-      
-      - name: Terraform init
-        id: init
-        run: terraform -chdir=terraform init
-      
-      - name: Terraform select workspace
-        run: terraform -chdir=terraform workspace select "${ENVIRONMENT}"
-
       - name: Get SSH private key
         run: |
           cat <<EOF > ssh_id
@@ -138,31 +129,28 @@ jobs:
           EOF
           chmod 600 ssh_id
 
-      - name: Test SSH connection
-        id: test
+      - name: Wait for SSH connection
+        id: wait
+        env:
+          DEMO_IPV4_ADDRESS: ${{ needs.provision.outputs.demo_ipv4_address }}
         run: |
-          DEMO_IPV4_ADDRESS=$(terraform -chdir=terraform output -raw ipv4_address)
-          if [ -n "$DEMO_IPV4_ADDRESS" ]; then
-            # It takes some time until SSH server is ready (Hetzner server preparation, VM boot up, Cloud-init setup), usually around a minute with plenty of buffer at the top
-            attempt=0
-            max_attempts=30
-            while [ $attempt -lt $max_attempts ]; do
-              if ssh -i ssh_id -o StrictHostKeyChecking=no "github@$DEMO_IPV4_ADDRESS" echo 'Hello world from $(hostname)'; then
-                echo "SSH connection attempt #$attempt successful"
-                break
-              else
-                echo "SSH connection attempt #$attempt failed, retrying in 10 seconds..."
-                attempt=$((attempt + 1))
-                sleep 10
-              fi
-            done
-
-            if [ $attempt -eq $max_attempts ]; then
-              echo "SSH connection failed after $max_attempts attempts"
-              exit 1
+          # It takes some time until SSH server is ready (Hetzner server preparation, VM boot up, Cloud-init setup), usually around a minute with plenty of buffer at the top
+          attempt=0
+          max_attempts=30
+          while [ $attempt -lt $max_attempts ]; do
+            if ssh -i ssh_id -o StrictHostKeyChecking=no "github@$DEMO_IPV4_ADDRESS" echo 'Hello world from $(hostname)'; then
+              echo "SSH connection attempt #$attempt successful"
+              break
+            else
+              echo "SSH connection attempt #$attempt failed, retrying in 10 seconds..."
+              attempt=$((attempt + 1))
+              sleep 10
             fi
-          else
-            echo "Skipping SSH connection test, Terraform output ipv4_address is empty"
+          done
+
+          if [ $attempt -eq $max_attempts ]; then
+            echo "SSH connection failed after $max_attempts attempts"
+            exit 1
           fi
         continue-on-error: true
 
@@ -170,36 +158,23 @@ jobs:
         run: |
           rm ssh_id
 
-      - name: Terraform plan status
-        if: steps.test.outcome == 'failure'
+      - name: SSH connection wait status
+        if: steps.wait.outcome == 'failure'
         run: exit 1
 
   config:
     name: "Configure Infrastructure"
     runs-on: ubuntu-latest
-    needs: test
+    needs: [provision, wait]
+    if: needs.provision.outputs.demo_ipv4_address != ''
     environment:
       name: ${{ github.event_name == 'push' && 'production' || github.event_name == 'pull_request' && 'testing' || 'development' }}
     steps:
-      - name: Checkout Terraform configuration
+      - name: Checkout Ansible configuration
         uses: actions/checkout@v4
         with:
-          sparse-checkout: |
-            ansible
-            terraform
+          sparse-checkout: ansible
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.11.0
-      
-      - name: Terraform init
-        id: init
-        run: terraform -chdir=terraform init
-      
-      - name: Terraform select workspace
-        run: terraform -chdir=terraform workspace select "${ENVIRONMENT}"
-      
       - name: Install Ansible dependencies
         run: |
           pipx inject ansible-core requests python-dateutil
@@ -215,16 +190,18 @@ jobs:
           chmod 600 ssh_id
 
       - name: Add SSH fingerprint and private key
+        env:
+          DEMO_IPV4_ADDRESS: ${{ needs.provision.outputs.demo_ipv4_address }}
         run: |
           mkdir ~/.ssh
           chmod 700 ~/.ssh
-          ssh-keyscan $(terraform -chdir=terraform output -raw ipv4_address) >> ~/.ssh/known_hosts
+          ssh-keyscan "$DEMO_IPV4_ADDRESS" >> ~/.ssh/known_hosts
           mv ssh_id ~/.ssh/id_ed25519
 
       - name: Run Ansible playbook
         id: ansible-playbook
         run: |
-          sed -i "s/workspace/$(terraform -chdir=terraform workspace show)/" ansible/hcloud.yaml
+          sed -i "s/workspace/$ENVIRONMENT/" ansible/hcloud.yaml
           ansible-playbook -u github -i ansible/hcloud.yaml ansible/test.yaml
         continue-on-error: true
 
