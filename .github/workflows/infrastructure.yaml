@@ -17,6 +17,10 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
   ENVIRONMENT: ${{ github.event_name == 'push' && 'production' || github.event_name == 'pull_request' && 'testing' || 'development' }}
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  TF_CLI_ARGS_apply: "-compact-warnings"
+  TF_CLI_ARGS_plan: "-compact-warnings"
   TF_VAR_ssh_id_pub: ${{ vars.SSH_ID_PUB }}
 
 jobs:
@@ -49,7 +53,7 @@ jobs:
 
       - name: Terraform plan
         id: plan
-        run: terraform -chdir=terraform plan -no-color -input=false
+        run: terraform -chdir=terraform plan -no-color
         continue-on-error: true
       
       - name: Terraform plan as the PR comment
@@ -107,7 +111,7 @@ jobs:
         run: exit 1
 
       - name: Terraform apply
-        run: terraform -chdir=terraform apply -auto-approve -input=false
+        run: terraform -chdir=terraform apply -auto-approve
 
       - name: Get the demo server IPv4 address
         id: get_terraform_outputs
@@ -239,7 +243,7 @@ jobs:
         run: terraform -chdir=terraform workspace select "${ENVIRONMENT}"
   
       - name: Terraform destroy
-        run: terraform -chdir=terraform destroy -auto-approve -input=false
+        run: terraform -chdir=terraform destroy -auto-approve
       
       - name: Terraform select default workspace
         run: terraform -chdir=terraform workspace select "default"
