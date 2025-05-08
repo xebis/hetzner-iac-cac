@@ -3,8 +3,6 @@ name: Infrastructure Lifecycle
 
 on:
   push:
-    branches:
-      - main
   pull_request:
     types: [closed, opened, reopened, synchronize]
     branches:
@@ -16,7 +14,6 @@ env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
-  ENVIRONMENT: ${{ github.event_name == 'push' && 'production' || github.event_name == 'pull_request' && 'testing' || 'development' }}
   TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
   TF_CLI_ARGS_apply: "-compact-warnings"
@@ -24,14 +21,62 @@ env:
   TF_VAR_ssh_id_pub: ${{ vars.SSH_ID_PUB }}
 
 jobs:
+  get-environment:
+    name: "Get Environment Information"
+    runs-on: ubuntu-latest
+    outputs:
+      environment_group_name: ${{ steps.get-environment-group.outputs.environment_group_name }}
+      environment_uri: ${{ steps.get-environment.outputs.environment_uri }}
+
+    steps:
+      - name: Get environment group
+        id: get-environment-group
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "environment_group_name=testing" >> $GITHUB_OUTPUT
+            echo "environment_group_slug=test" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "environment_group_name=production" >> $GITHUB_OUTPUT
+            echo "environment_group_slug=prod" >> $GITHUB_OUTPUT
+          else
+            echo "environment_group_name=development" >> $GITHUB_OUTPUT
+            echo "environment_group_slug=dev" >> $GITHUB_OUTPUT
+          fi
+      - name: Get environment
+        id: get-environment
+        run: |
+          # Have to meet requirements of https://docs.hetzner.com/cloud/servers/getting-started/creating-a-server/
+          GITHUB_ENV_REF="${{ format('pr/{0}', github.event.pull_request.number) || format('{0}/{1}', github.ref_type, github.ref_name) }}"
+          GITHUB_ENV_REF_LOWER="${GITHUB_ENV_REF,,}"
+          GITHUB_ENV_REF_STRIPPED=$(echo "$GITHUB_ENV_REF_LOWER" | sed 's/[^a-z0-9.-]/-/g')
+
+          GITHUB_ENV_REF_SANITIZED="$GITHUB_ENV_REF_STRIPPED"
+          while [[ ! "$GITHUB_ENV_REF_SANITIZED" =~ ^[a-z0-9] ]]; do
+            GITHUB_ENV_REF_SANITIZED="${GITHUB_ENV_REF_SANITIZED:1}"
+          done
+          while [[ "$GITHUB_ENV_REF_SANITIZED" =~ [-.]$ ]]; do
+            GITHUB_ENV_REF_SANITIZED="${GITHUB_ENV_REF_SANITIZED%?}"
+          done
+
+          if [[ "${{ steps.get-environment-group.outputs.environment_group_name }}" == "testing" ||
+             "${{ steps.get-environment-group.outputs.environment_group_name }}" == "development" ]]; then
+            GITHUB_ENV_REF_HASHED="${GITHUB_ENV_REF_SANITIZED:0:23}-"$(echo -n "$GITHUB_ENV_REF_SANITIZED" | sha1sum | cut -c1-6)
+          else
+            GITHUB_ENV_REF_HASHED="${GITHUB_ENV_REF_SANITIZED:0:32}"
+          fi
+          
+          GITHUB_ENV_REF_URI="${{ steps.get-environment-group.outputs.environment_group_slug }}-$GITHUB_ENV_REF_HASHED"
+          echo "environment_uri=$GITHUB_ENV_REF_URI" >> $GITHUB_OUTPUT
+
   provision:
     name: "Provision Infrastructure"
     runs-on: ubuntu-latest
+    needs: get-environment
     if: github.event_name != 'pull_request' || github.event.action != 'closed'
     outputs:
       demo_ipv4_address: ${{ steps.get_terraform_outputs.outputs.demo_ipv4_address }}
     environment:
-      name: ${{ github.event_name == 'push' && 'production' || github.event_name == 'pull_request' && 'testing' || 'development' }}
+      name: ${{ needs.get-environment.outputs.environment_group_name }}
 
     steps:
       - name: Checkout Terraform configuration
@@ -49,7 +94,7 @@ jobs:
         run: terraform -chdir=terraform init
       
       - name: Terraform select or create workspace
-        run: terraform -chdir=terraform workspace select -or-create "${ENVIRONMENT}"
+        run: terraform -chdir=terraform workspace select -or-create "${{ needs.get-environment.outputs.environment_uri }}"
 
       - name: Terraform plan
         id: plan
@@ -121,10 +166,10 @@ jobs:
   wait:
     name: "Wait for Infrastructure"
     runs-on: ubuntu-latest
-    needs: provision
+    needs: [get-environment, provision]
     if: needs.provision.outputs.demo_ipv4_address != ''
     environment:
-      name: ${{ github.event_name == 'push' && 'production' || github.event_name == 'pull_request' && 'testing' || 'development' }}
+      name: ${{ needs.get-environment.outputs.environment_group_name }}
     steps:
       - name: Get SSH private key
         run: |
@@ -169,10 +214,10 @@ jobs:
   config:
     name: "Configure Infrastructure"
     runs-on: ubuntu-latest
-    needs: [provision, wait]
+    needs: [get-environment, provision, wait]
     if: needs.provision.outputs.demo_ipv4_address != ''
     environment:
-      name: ${{ github.event_name == 'push' && 'production' || github.event_name == 'pull_request' && 'testing' || 'development' }}
+      name: ${{ needs.get-environment.outputs.environment_group_name }}
     steps:
       - name: Checkout Ansible configuration
         uses: actions/checkout@v4
@@ -205,7 +250,7 @@ jobs:
       - name: Run Ansible playbook
         id: ansible-playbook
         run: |
-          sed -i "s/workspace/$ENVIRONMENT/" ansible/hcloud.yaml
+          sed -i "s/workspace/${{ needs.get-environment.outputs.environment_uri }}/" ansible/hcloud.yaml
           ansible-playbook -u github -i ansible/hcloud.yaml ansible/test.yaml
         continue-on-error: true
 
@@ -220,9 +265,10 @@ jobs:
   destroy:
     name: "Destroy Infrastructure"
     runs-on: ubuntu-latest
+    needs: get-environment
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     environment:
-      name: ${{ github.event_name == 'push' && 'production' || github.event_name == 'pull_request' && 'testing' || 'development' }}
+      name: ${{ needs.get-environment.outputs.environment_group_name }}
 
     steps:
       - name: Checkout Terraform configuration
@@ -240,7 +286,7 @@ jobs:
         run: terraform -chdir=terraform init
       
       - name: Terraform select workspace
-        run: terraform -chdir=terraform workspace select "${ENVIRONMENT}"
+        run: terraform -chdir=terraform workspace select "${{ needs.get-environment.outputs.environment_uri }}"
   
       - name: Terraform destroy
         run: terraform -chdir=terraform destroy -auto-approve
@@ -249,4 +295,4 @@ jobs:
         run: terraform -chdir=terraform workspace select "default"
 
       - name: Terraform delete workspace
-        run: terraform -chdir=terraform workspace delete "${ENVIRONMENT}"
+        run: terraform -chdir=terraform workspace delete "${{ needs.get-environment.outputs.environment_uri }}"
