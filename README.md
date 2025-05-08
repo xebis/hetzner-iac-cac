@@ -17,11 +17,12 @@ GitOps-driven repo for provisioning Hetzner Cloud using Terraform and configurin
 
 ### Workflow
 
-| Environment     | Event                            | Plan                        | Apply                       | Destroy                      |
-| --------------- | -------------------------------- | --------------------------- | --------------------------- | ---------------------------- |
-| **Production**  | `on.push.branches: main`         |                             | automatic or manual         | never, perpetual environment |
-| **Testing**     | `on.pull_request.branches: main` | Pull Request comment        | automatic or manual         | on pull-request close/merge  |
-| **Development** | manually at localhost            | [Local Usage](#local-usage) | [Local Usage](#local-usage) | [Local Usage](#local-usage)  |
+| Environment Group | Count                       | Event                            | Plan                        | Apply                       | Destroy                      |
+| ----------------- | --------------------------- | -------------------------------- | --------------------------- | --------------------------- | ---------------------------- |
+| **Production**    | 1                           | `on.push.branches: main`         |                             | automatic or manual         | never, perpetual environment |
+| **Testing**       | For each opened PR          | `on.pull_request.branches: main` | Pull Request comment        | automatic or manual         | on pull-request close/merge  |
+| **Development**   | For each non-main branch    | `on.push:`                       |                             | automatic or manual         | _not yet implemented_        |
+| **Development**   | as much as manually created | manually at localhost            | [Local Usage](#local-usage) | [Local Usage](#local-usage) | [Local Usage](#local-usage)  |
 
 > [!note]
 > Automatic or manual apply depends on the environment protection rules set in the GitHub repository
@@ -64,7 +65,7 @@ Set up a Hetzner Cloud project:
 
 ### Generate SSH Key Pair
 
-Prepare a dedicated SSH key pair for each environment.
+Prepare a dedicated SSH key pair for each environment group.
 
 ```shell
 ssh-keygen -t ed25519 -b 2048 -N "" -f id_ed25519 -q
@@ -73,7 +74,7 @@ ssh-keygen -t ed25519 -b 2048 -N "" -f id_ed25519 -q
 > [!important]
 > Ensure you have the following ready:
 >
-> - A unique `id_ed25519` and `id_ed25519.pub` key pair for each environment.
+> - A unique `id_ed25519` and `id_ed25519.pub` key pair for each environment group.
 
 ### Set Up GitHub Repository
 
@@ -83,15 +84,8 @@ Set up GitHub actions, variables and secrets:
   - Actions / General
     - Workflow permissions: Read and write permissions
   - Environments
-    - **New environment**
-      - `production`
-        - **Add environment secret**
-          - Name: SSH_ID
-          - Value: *id_ed25519 file contents including trailing newline*
-        - **Add environment variable**
-          - Name: SSH_ID_PUB
-          - Value: *id_ed25519.pub file contents without trailing newline*
-      - `testing`
+    - (For each environment group) **New environment**
+      - *environment*
         - **Add environment secret**
           - Name: SSH_ID
           - Value: *id_ed25519 file contents including trailing newline*
@@ -118,7 +112,9 @@ Set up GitHub actions, variables and secrets:
 
 **Testing environments** are ephemeral and manually approved, but the workflow is automatically prepared for each pull_request to the main branch. A Terraform plan is generated to a pull request comment. The apply step is manual, allowing skipping ephemeral environment where it's not necessary. Destruction is automated and tied to the lifecycle of the pull request-it is torn down as soon as the PR is closed or merged, ensuring resource cleanup.
 
-**Development environments** are local and manually managed. You can create, plan, apply, and destroy these environments directly from the working directory using CLI, see [Local Usage](#local-usage).
+GitHub workflow managed **development environments** are ephemeral and manually approved, but the workflow is automatically prepared for each non-main branch. The apply step is manual, allowing skipping ephemeral environment where it's not necessary. Destruction is not yet implemented.
+
+Localhost **development environments** are local and manually managed. You can create, plan, apply, and destroy these environments directly from the working directory using CLI, see [Local Usage](#local-usage).
 
 > [!note]
 > All environments share one S3 bucket and one Hetzner Cloud project.
