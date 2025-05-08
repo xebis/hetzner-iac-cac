@@ -17,12 +17,12 @@ GitOps-driven repo for provisioning Hetzner Cloud using Terraform and configurin
 
 ### Workflow
 
-| Environment Group | Count                       | Event                            | Plan                        | Apply                       | Destroy                      |
-| ----------------- | --------------------------- | -------------------------------- | --------------------------- | --------------------------- | ---------------------------- |
-| **Production**    | 1                           | `on.push.branches: main`         |                             | automatic or manual         | never, perpetual environment |
-| **Testing**       | For each opened PR          | `on.pull_request.branches: main` | Pull Request comment        | automatic or manual         | on pull-request close/merge  |
-| **Development**   | For each non-main branch    | `on.push:`                       |                             | automatic or manual         | _not yet implemented_        |
-| **Development**   | as much as manually created | manually at localhost            | [Local Usage](#local-usage) | [Local Usage](#local-usage) | [Local Usage](#local-usage)  |
+| Environment Group | Count                      | Event                            | Plan                        | Apply                       | Destroy                      |
+| ----------------- | -------------------------- | -------------------------------- | --------------------------- | --------------------------- | ---------------------------- |
+| **Production**    | 1                          | `on.push.branches: main`         |                             | automatic or manual         | never, perpetual environment |
+| **Testing**       | For each opened PR         | `on.pull_request.branches: main` | Pull Request comment        | automatic or manual         | on pull-request close/merge  |
+| **Development**   | For each non-main branch   | `on.push:`                       |                             | automatic or manual         | _not yet implemented_        |
+| **Development**   | As much as locally created | manual at localhost              | [Local Usage](#local-usage) | [Local Usage](#local-usage) | [Local Usage](#local-usage)  |
 
 > [!note]
 > Automatic or manual apply depends on the environment protection rules set in the GitHub repository
