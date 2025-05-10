@@ -47,8 +47,8 @@ jobs:
         id: get-environment
         run: |
           # Have to meet requirements of https://docs.hetzner.com/cloud/servers/getting-started/creating-a-server/
-          if [ "${{ github.steps.get-environment-group.outputs.environment_group_name }}" = "production" ]; then
-            echo "environment_uri=${{ github.steps.get-environment-group.outputs.environment_group_slug }}" >> $GITHUB_OUTPUT
+          if [ "${{ steps.get-environment-group.outputs.environment_group_name }}" = "production" ]; then
+            echo "environment_uri=${{ steps.get-environment-group.outputs.environment_group_slug }}" >> $GITHUB_OUTPUT
           else
             GITHUB_ENV_REF="${{ github.event.pull_request.number && format('pr/{0}', github.event.pull_request.number) || format('{0}/{1}', github.ref_type, github.ref_name) }}"
             GITHUB_ENV_REF_LOWER="${GITHUB_ENV_REF,,}"
