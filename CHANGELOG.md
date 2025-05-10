@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.9.1](https://github.com/xebis/hetzner-iac-cac/compare/v0.9.0...v0.9.1) (2025-05-10)
+
+### Bug Fixes
+
+* prod env name and slug shouldn't be derived from a branch ([29e2c7c](https://github.com/xebis/hetzner-iac-cac/commit/29e2c7c12cd16c02c561ac1445ac9703be4b7951))
+
 ## [0.9.0](https://github.com/xebis/hetzner-iac-cac/compare/v0.8.0...v0.9.0) (2025-05-08)
 
 ### Features
