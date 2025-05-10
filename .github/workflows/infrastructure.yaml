@@ -32,40 +32,45 @@ jobs:
       - name: Get environment group
         id: get-environment-group
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
             echo "environment_group_name=testing" >> $GITHUB_OUTPUT
             echo "environment_group_slug=test" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
             echo "environment_group_name=production" >> $GITHUB_OUTPUT
             echo "environment_group_slug=prod" >> $GITHUB_OUTPUT
           else
             echo "environment_group_name=development" >> $GITHUB_OUTPUT
             echo "environment_group_slug=dev" >> $GITHUB_OUTPUT
           fi
+
       - name: Get environment
         id: get-environment
         run: |
           # Have to meet requirements of https://docs.hetzner.com/cloud/servers/getting-started/creating-a-server/
-          GITHUB_ENV_REF="${{ github.event.pull_request.number && format('pr/{0}', github.event.pull_request.number) || format('{0}/{1}', github.ref_type, github.ref_name) }}"
-          GITHUB_ENV_REF_LOWER="${GITHUB_ENV_REF,,}"
-          GITHUB_ENV_REF_STRIPPED=$(echo "$GITHUB_ENV_REF_LOWER" | sed 's/[^a-z0-9.-]/-/g')
-
-          GITHUB_ENV_REF_SANITIZED="$GITHUB_ENV_REF_STRIPPED"
-          while [[ ! "$GITHUB_ENV_REF_SANITIZED" =~ ^[a-z0-9] ]]; do
-            GITHUB_ENV_REF_SANITIZED="${GITHUB_ENV_REF_SANITIZED:1}"
-          done
-          while [[ "$GITHUB_ENV_REF_SANITIZED" =~ [-.]$ ]]; do
-            GITHUB_ENV_REF_SANITIZED="${GITHUB_ENV_REF_SANITIZED%?}"
-          done
-
-          if [ "${{ steps.get-environment-group.outputs.environment_group_name }}" = "development" ]; then
-            GITHUB_ENV_REF_HASHED="${GITHUB_ENV_REF_SANITIZED:0:23}-"$(echo -n "$GITHUB_ENV_REF_SANITIZED" | sha1sum | cut -c1-6)
+          if [ "${{ github.steps.get-environment-group.outputs.environment_group_name }}" = "production" ]; then
+            echo "environment_uri=${{ github.steps.get-environment-group.outputs.environment_group_slug }}" >> $GITHUB_OUTPUT
           else
-            GITHUB_ENV_REF_HASHED="${GITHUB_ENV_REF_SANITIZED:0:32}"
+            GITHUB_ENV_REF="${{ github.event.pull_request.number && format('pr/{0}', github.event.pull_request.number) || format('{0}/{1}', github.ref_type, github.ref_name) }}"
+            GITHUB_ENV_REF_LOWER="${GITHUB_ENV_REF,,}"
+            GITHUB_ENV_REF_STRIPPED=$(echo "$GITHUB_ENV_REF_LOWER" | sed 's/[^a-z0-9.-]/-/g')
+
+            GITHUB_ENV_REF_SANITIZED="$GITHUB_ENV_REF_STRIPPED"
+            while [[ ! "$GITHUB_ENV_REF_SANITIZED" =~ ^[a-z0-9] ]]; do
+              GITHUB_ENV_REF_SANITIZED="${GITHUB_ENV_REF_SANITIZED:1}"
+            done
+            while [[ "$GITHUB_ENV_REF_SANITIZED" =~ [-.]$ ]]; do
+              GITHUB_ENV_REF_SANITIZED="${GITHUB_ENV_REF_SANITIZED%?}"
+            done
+
+            if [ "${{ steps.get-environment-group.outputs.environment_group_name }}" = "development" ]; then
+              GITHUB_ENV_REF_HASHED="${GITHUB_ENV_REF_SANITIZED:0:23}-"$(echo -n "$GITHUB_ENV_REF_SANITIZED" | sha1sum | cut -c1-6)
+            else
+              GITHUB_ENV_REF_HASHED="${GITHUB_ENV_REF_SANITIZED:0:32}"
+            fi
+            
+            GITHUB_ENV_REF_URI="${{ steps.get-environment-group.outputs.environment_group_slug }}-$GITHUB_ENV_REF_HASHED"
+            echo "environment_uri=$GITHUB_ENV_REF_URI" >> $GITHUB_OUTPUT
           fi
-          
-          GITHUB_ENV_REF_URI="${{ steps.get-environment-group.outputs.environment_group_slug }}-$GITHUB_ENV_REF_HASHED"
-          echo "environment_uri=$GITHUB_ENV_REF_URI" >> $GITHUB_OUTPUT
 
   provision:
     name: "Provision Infrastructure"
