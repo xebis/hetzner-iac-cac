@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.2](https://github.com/xebis/hetzner-iac-cac/compare/v0.9.1...v0.9.2) (2025-05-10)
+
+### Bug Fixes
+
+* production should have zero servers created ([6504379](https://github.com/xebis/hetzner-iac-cac/commit/650437904ea898bb182bf2ddf8c5747da40a2d3a))
+* production uses wrong context for steps output ([77be405](https://github.com/xebis/hetzner-iac-cac/commit/77be405c90f11396552db97d9c0930116fe8f375))
+
 ## [0.9.1](https://github.com/xebis/hetzner-iac-cac/compare/v0.9.0...v0.9.1) (2025-05-10)
 
 ### Bug Fixes
