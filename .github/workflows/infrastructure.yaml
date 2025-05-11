@@ -80,7 +80,6 @@ jobs:
     name: "Wait for Infrastructure"
     runs-on: ubuntu-latest
     needs: [get-environment, provision]
-    if: needs.provision.outputs.demo_ipv4_address != ''
     environment:
       name: ${{ needs.get-environment.outputs.environment_group_name }}
     steps:
@@ -91,7 +90,6 @@ jobs:
     name: "Configure Infrastructure"
     runs-on: ubuntu-latest
     needs: [get-environment, provision, wait]
-    if: needs.provision.outputs.demo_ipv4_address != ''
     environment:
       name: ${{ needs.get-environment.outputs.environment_group_name }}
     steps:
