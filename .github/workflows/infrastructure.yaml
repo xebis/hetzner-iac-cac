@@ -2,11 +2,13 @@
 name: Infrastructure Lifecycle
 
 on:
+  create:
   push:
   pull_request:
     types: [closed, opened, reopened, synchronize]
     branches:
       - main
+  delete:
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
@@ -76,7 +78,7 @@ jobs:
     name: "Provision Infrastructure"
     runs-on: ubuntu-latest
     needs: get-environment
-    if: github.event_name != 'pull_request' || github.event.action != 'closed'
+    if: github.event_name != 'pull_request' || github.event.action != 'closed' && github.event_name != 'delete'
     outputs:
       demo_ipv4_address: ${{ steps.get_terraform_outputs.outputs.demo_ipv4_address }}
     environment:
@@ -270,7 +272,7 @@ jobs:
     name: "Destroy Infrastructure"
     runs-on: ubuntu-latest
     needs: get-environment
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' || github.event_name == 'delete'
     environment:
       name: ${{ needs.get-environment.outputs.environment_group_name }}
 
