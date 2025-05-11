@@ -10,18 +10,6 @@ on:
       - main
   delete:
 
-env:
-  AWS_REGION: ${{ vars.AWS_REGION }}
-  AWS_ENDPOINT_URL_S3: ${{ vars.AWS_ENDPOINT_URL_S3 }}
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
-  TF_IN_AUTOMATION: "true"
-  TF_INPUT: "false"
-  TF_CLI_ARGS_apply: "-compact-warnings"
-  TF_CLI_ARGS_plan: "-compact-warnings"
-  TF_VAR_ssh_id_pub: ${{ vars.SSH_ID_PUB }}
-
 jobs:
   get-environment:
     name: "Get Environment Information"
@@ -85,89 +73,8 @@ jobs:
       name: ${{ needs.get-environment.outputs.environment_group_name }}
 
     steps:
-      - name: Checkout Terraform configuration
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: terraform
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.11.0
-      
-      - name: Terraform init
-        id: init
-        run: terraform -chdir=terraform init
-      
-      - name: Terraform select or create workspace
-        run: terraform -chdir=terraform workspace select -or-create "${{ needs.get-environment.outputs.environment_uri }}"
-
-      - name: Terraform plan
-        id: plan
-        run: terraform -chdir=terraform plan -no-color
-        continue-on-error: true
-      
-      - name: Terraform plan as the PR comment
-        uses: actions/github-script@v7
-        if: github.event_name == 'pull_request'
-        env:
-          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            // 1. Retrieve existing bot comments for the PR
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const botComment = comments.find(comment => {
-              return comment.user.type === 'Bot' && comment.body.includes('<!-- GitHub Actions Terraform PR comment bot -->')
-            });
-
-            // 2. Put together bot new comment contents for the PR
-            const output = `<!-- GitHub Actions Terraform PR comment bot -->
-            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
-            
-            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
-
-            <details><summary>Show Plan</summary>
-
-            \`\`\`\n
-            ${process.env.PLAN}
-            \`\`\`
-
-            </details>
-            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-
-            // 3. Delete previous comment for the PR
-            if (botComment) {
-              github.rest.issues.deleteComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-              });
-            }
-
-            // 4. Create a new comment
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: output
-            });
-
-      - name: Terraform plan status
-        if: steps.plan.outcome == 'failure'
-        run: exit 1
-
-      - name: Terraform apply
-        run: terraform -chdir=terraform apply -auto-approve
-
-      - name: Get the demo server IPv4 address
-        id: get_terraform_outputs
-        run: |
-          echo "demo_ipv4_address=$(terraform -chdir=terraform output -raw ipv4_address)" >> "$GITHUB_OUTPUT"
+      - name: Echo info
+        run: echo "Provision ${{ needs.get-environment.outputs.environment_uri }}"
 
   wait:
     name: "Wait for Infrastructure"
@@ -177,45 +84,8 @@ jobs:
     environment:
       name: ${{ needs.get-environment.outputs.environment_group_name }}
     steps:
-      - name: Get SSH private key
-        run: |
-          cat <<EOF > ssh_id
-          ${{ secrets.SSH_ID }}
-          EOF
-          chmod 600 ssh_id
-
-      - name: Wait for SSH connection
-        id: wait
-        env:
-          DEMO_IPV4_ADDRESS: ${{ needs.provision.outputs.demo_ipv4_address }}
-        run: |
-          # It takes some time until SSH server is ready (Hetzner server preparation, VM boot up, Cloud-init setup), usually around a minute with plenty of buffer at the top
-          attempt=0
-          max_attempts=30
-          while [ $attempt -lt $max_attempts ]; do
-            if ssh -i ssh_id -o StrictHostKeyChecking=no "github@$DEMO_IPV4_ADDRESS" echo 'Hello world from $(hostname)'; then
-              echo "SSH connection attempt #$attempt successful"
-              break
-            else
-              echo "SSH connection attempt #$attempt failed, retrying in 10 seconds..."
-              attempt=$((attempt + 1))
-              sleep 10
-            fi
-          done
-
-          if [ $attempt -eq $max_attempts ]; then
-            echo "SSH connection failed after $max_attempts attempts"
-            exit 1
-          fi
-        continue-on-error: true
-
-      - name: Remove SSH private key
-        run: |
-          rm ssh_id
-
-      - name: SSH connection wait status
-        if: steps.wait.outcome == 'failure'
-        run: exit 1
+      - name: Echo info
+        run: echo "Wait ${{ needs.get-environment.outputs.environment_uri }}"
 
   config:
     name: "Configure Infrastructure"
@@ -225,48 +95,8 @@ jobs:
     environment:
       name: ${{ needs.get-environment.outputs.environment_group_name }}
     steps:
-      - name: Checkout Ansible configuration
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: ansible
-
-      - name: Install Ansible dependencies
-        run: |
-          pipx inject ansible-core requests python-dateutil
-
-      - name: Install Ansible configuration dependencies
-        run: ansible-galaxy collection install -r ansible/requirements.yaml
-
-      - name: Get SSH private key
-        run: |
-          cat <<EOF > ssh_id
-          ${{ secrets.SSH_ID }}
-          EOF
-          chmod 600 ssh_id
-
-      - name: Add SSH fingerprint and private key
-        env:
-          DEMO_IPV4_ADDRESS: ${{ needs.provision.outputs.demo_ipv4_address }}
-        run: |
-          mkdir ~/.ssh
-          chmod 700 ~/.ssh
-          ssh-keyscan "$DEMO_IPV4_ADDRESS" >> ~/.ssh/known_hosts
-          mv ssh_id ~/.ssh/id_ed25519
-
-      - name: Run Ansible playbook
-        id: ansible-playbook
-        run: |
-          sed -i "s/workspace/${{ needs.get-environment.outputs.environment_uri }}/" ansible/hcloud.yaml
-          ansible-playbook -u github -i ansible/hcloud.yaml ansible/test.yaml
-        continue-on-error: true
-
-      - name: Remove SSH directory
-        run: |
-          rm -rf ~/.ssh
-
-      - name: Ansible playbook status
-        if: steps.ansible-playbook.outcome == 'failure'
-        run: exit 1
+      - name: Echo info
+        run: echo "Config ${{ needs.get-environment.outputs.environment_uri }}"
 
   destroy:
     name: "Destroy Infrastructure"
@@ -277,28 +107,5 @@ jobs:
       name: ${{ needs.get-environment.outputs.environment_group_name }}
 
     steps:
-      - name: Checkout Terraform configuration
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: terraform
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.11.0
-      
-      - name: Terraform init
-        id: init
-        run: terraform -chdir=terraform init
-      
-      - name: Terraform select workspace
-        run: terraform -chdir=terraform workspace select "${{ needs.get-environment.outputs.environment_uri }}"
-  
-      - name: Terraform destroy
-        run: terraform -chdir=terraform destroy -auto-approve
-      
-      - name: Terraform select default workspace
-        run: terraform -chdir=terraform workspace select "default"
-
-      - name: Terraform delete workspace
-        run: terraform -chdir=terraform workspace delete "${{ needs.get-environment.outputs.environment_uri }}"
+      - name: Echo info
+        run: echo "Destroy ${{ needs.get-environment.outputs.environment_uri }}"
