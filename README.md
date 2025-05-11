@@ -21,7 +21,7 @@ GitOps-driven repo for provisioning Hetzner Cloud using Terraform and configurin
 | ----------------- | -------------------------- | -------------------------------- | --------------------------- | --------------------------- | ---------------------------- |
 | **Production**    | 1                          | `on.push.branches: main`         |                             | automatic or manual         | never, perpetual environment |
 | **Testing**       | For each opened PR         | `on.pull_request.branches: main` | Pull Request comment        | automatic or manual         | on pull-request close/merge  |
-| **Development**   | For each non-main branch   | `on.push:`                       |                             | automatic or manual         | _not yet implemented_        |
+| **Development**   | For each non-main branch   | `on.push:` and `on.create:`      |                             | automatic or manual         | on branch delete             |
 | **Development**   | As much as locally created | manual at localhost              | [Local Usage](#local-usage) | [Local Usage](#local-usage) | [Local Usage](#local-usage)  |
 
 > [!note]
@@ -110,9 +110,9 @@ Set up GitHub actions, variables and secrets:
 
 **Production environment** is created on push events to the main branch. A Terraform plan is generated to a pull request comment, allowing for visibility and review before changes are applied. The apply step is manual, ensuring control over production changes. This environment is long-lived and never destroyed; it's considered a perpetual environment that must be maintained continuously.
 
-**Testing environments** are ephemeral and manually approved, but the workflow is automatically prepared for each pull_request to the main branch. A Terraform plan is generated to a pull request comment. The apply step is manual, allowing skipping ephemeral environment where it's not necessary. Destruction is automated and tied to the lifecycle of the pull request-it is torn down as soon as the PR is closed or merged, ensuring resource cleanup.
+**Testing environments** are ephemeral and manually approved, but the workflow is automatically prepared for each pull_request to the main branch. A Terraform plan is generated to a pull request comment. The apply step is manual, allowing skipping ephemeral environment where it's not necessary. Destruction is automated and tied to the lifecycle of the pull request-it is torn down as soon as the PR is closed or merged.
 
-GitHub workflow managed **development environments** are ephemeral and manually approved, but the workflow is automatically prepared for each non-main branch. The apply step is manual, allowing skipping ephemeral environment where it's not necessary. Destruction is not yet implemented.
+GitHub workflow managed **development environments** are ephemeral and manually approved, but the workflow is automatically prepared for each non-main branch. The apply step is manual, allowing skipping ephemeral environment where it's not necessary. Destruction is automated and tied to the lifecycle of the branch-it is torn down as soon as the branch is deleted.
 
 Localhost **development environments** are local and manually managed. You can create, plan, apply, and destroy these environments directly from the working directory using CLI, see [Local Usage](#local-usage).
 
