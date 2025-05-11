@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.10.1](https://github.com/xebis/hetzner-iac-cac/compare/v0.10.0...v0.10.1) (2025-05-11)
+
+### Bug Fixes
+
+* branch delete shouldn't run provisioning ([ea5ac72](https://github.com/xebis/hetzner-iac-cac/commit/ea5ac7207386d3a865e121206b6ce0ab9f88a063))
+
 ## [0.10.0](https://github.com/xebis/hetzner-iac-cac/compare/v0.9.2...v0.10.0) (2025-05-11)
 
 ### Features
