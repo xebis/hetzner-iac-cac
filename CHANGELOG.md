@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.10.0](https://github.com/xebis/hetzner-iac-cac/compare/v0.9.2...v0.10.0) (2025-05-11)
+
+### Features
+
+* add environment is created and deleted with environment branch ([53fa654](https://github.com/xebis/hetzner-iac-cac/commit/53fa654a7bbfdc31e5f0f7cb5f31a24eba7c39e9))
+
 ## [0.9.2](https://github.com/xebis/hetzner-iac-cac/compare/v0.9.1...v0.9.2) (2025-05-10)
 
 ### Bug Fixes
